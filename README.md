@@ -41,6 +41,12 @@ DB_PASSWORD=tucontraseña
 
 Dentro del directorio del proyecto, ejecutar `composer install`
 
+### Dependencias Utilizadas:
+
+`aws-sdk SDK` oficial para PHP que permite trabajar con servicios como S3 y Cognito.
+
+`firebase/php-jwt` Librería para decodificar y validar tokens JWT generados por AWS Cognito.
+
 ## 8. Generar la clave de la aplicación (APP_KEY)
 
 Ejecutar el comando `php artisan key:generate`
@@ -53,5 +59,8 @@ Ejecutar el comando `php artisan migrate`
 
 Ejecutar el comando `php artisan serve`
 
+## Diagrama de Arquitectura
 
+El siguiente diagrama muestra cómo se estructura la arquitectura del backend de Laravel.
 
+![Diagrama de Arquitectura del Backend](./readme-assets/arquitectura-tesis-backend.png)
