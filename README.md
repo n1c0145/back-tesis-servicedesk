@@ -63,4 +63,4 @@ Ejecutar el comando `php artisan serve`
 
 El siguiente diagrama muestra cómo se estructura la arquitectura del backend de Laravel.
 
-![Diagrama de Arquitectura del Backend](./readme-assets/arquitectura-tesis-backend.png)
+![Diagrama de Arquitectura del Backend](./readme-assets/arquitectura-tesis-back.png)
