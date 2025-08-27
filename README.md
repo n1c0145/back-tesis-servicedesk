@@ -6,58 +6,44 @@ Servidor para ServiceDesk, desarrollado con Laravel 11 y conectada a base de dat
 
 Tener instalado lo siguiente:
 
-- [Laragon](https://laragon.org/) (versión full o portable)
-- [PostgreSQL BIN](https://www.enterprisedb.com/download-postgresql-binaries) (se añade manualmente a Laragon)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)  
 - DBeaver o PgAdmin para gestionar la base de datos.
-- PHP >= 8.1 (incluido en Laragon)
-- Composer (incluido en Laragon)
 
-## 1. Configurar PostgreSQL en Laragon
+## 1. Clonar el repositorio
 
-Extraer el binario de PostgreSQL en en directorio bin de laragon `C:\laragon\bin`
+## 2. Configurar archivo .env: Se configura la conexión a PostgreSQL y AWS
 
-## 2. Reiniciar Laragon y verificar que PostgreSQL aparece en el panel.
+## 3. Levantar los contenedores con Docker con el comando `docker compose up -d --build`
 
-## 3. Habilitar extensiones de PostgreSQL `pdo_pgsql` y `pgsql`
+## 4. Instalar dependencias y configurar Laravel:
 
-## 4. Clonar el repositorio
+`docker compose exec app bash`
+Abre una terminal dentro del contenedor para ejecutar comandos directamente en el entorno.
 
-`git clone https://github.com/n1c0145/back-tesis-servicedesk.git`
+`composer install`
+Instala todas las dependencias PHP definidas en composer.json dentro del contenedor.
 
-## 5. Crear base de datos PostgreSQL
+`php artisan key:generate`
+Genera la clave de la aplicación Laravel (APP_KEY)
 
-Desde DBeaver o PgAdmin, crear una nueva base de datos llamada `tesis_servicedesk`
+`php artisan migrate`
+Ejecuta las migraciones para crear las tablas de la base de datos definidas en tu proyecto Laravel.
 
-## 6. Configurar el archivo .env
+## 5. Acceder a la aplicación
 
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=tesis_servicedesk
-DB_USERNAME=postgres
-DB_PASSWORD=tucontraseña
+- Levantar los contenedores (Laravel + PostgreSQL): `docker compose up -d` Esto inicia el backend y la base de datos en segundo plano. Se ejecuta `php artisan serve` automaticamnte desde el contenedor.
 
-## 7. Instalar dependencias
+- Verificar que los contenedores estén corriendo: `docker ps`
 
-Dentro del directorio del proyecto, ejecutar `composer install`
+- Acceder a Laravel en el navegador: Acceder a Laravel en el navegador: `http://localhost:8000`. 
+
+- Opcional: ver logs del servidor para monitorear requests y errores: `docker compose logs -f app`
 
 ### Dependencias Utilizadas:
 
 `aws-sdk SDK` oficial para PHP que permite trabajar con servicios como S3 y Cognito.
 
 `firebase/php-jwt` Librería para decodificar y validar tokens JWT generados por AWS Cognito.
-
-## 8. Generar la clave de la aplicación (APP_KEY)
-
-Ejecutar el comando `php artisan key:generate`
-
-## 9. Ejecutar migraciones
-
-Ejecutar el comando `php artisan migrate`
-
-## 10. Levantar el servidor de desarrollo
-
-Ejecutar el comando `php artisan serve`
 
 ## Diagrama de Arquitectura
 
