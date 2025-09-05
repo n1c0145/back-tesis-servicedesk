@@ -42,4 +42,22 @@ class CognitoService
             return ['error' => $e->getAwsErrorMessage()];
         }
     }
+
+    public function loginUser($email, $password)
+    {
+        try {
+            $result = $this->client->initiateAuth([
+                'AuthFlow' => 'USER_PASSWORD_AUTH',
+                'ClientId' => $this->clientId,
+                'AuthParameters' => [
+                    'USERNAME' => $email,
+                    'PASSWORD' => $password,
+                ],
+            ]);
+
+            return $result->toArray();
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
 }
