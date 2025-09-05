@@ -43,6 +43,12 @@ class CognitoService
         }
     }
 
+    
+    public function getClient()
+    {
+        return $this->client;
+    }
+
     public function loginUser($email, $password)
     {
         try {

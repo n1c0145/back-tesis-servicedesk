@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use App\Services\CognitoService;
+use Aws\Exception\AwsException;
 
 class RegisterController extends Controller
 {
@@ -39,6 +40,16 @@ class RegisterController extends Controller
 
         if (isset($cognitoResponse['error'])) {
             return response()->json(['error' => $cognitoResponse['error']], 500);
+        }
+
+        // Confirmar usuario automáticamente 
+        try {
+            $this->cognito->getClient()->adminConfirmSignUp([
+                'UserPoolId' => env('COGNITO_USER_POOL_ID'),
+                'Username' => $request->correo,
+            ]);
+        } catch (AwsException $e) {
+            return response()->json(['error' => $e->getAwsErrorMessage()], 500);
         }
 
         // Guardar en la BD
