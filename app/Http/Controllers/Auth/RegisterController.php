@@ -6,9 +6,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use App\Services\CognitoService;
 
 class RegisterController extends Controller
 {
+    protected $cognito;
+
+    public function __construct(CognitoService $cognito)
+    {
+        $this->cognito = $cognito;
+    }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -16,21 +24,30 @@ class RegisterController extends Controller
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
             'cedula' => 'required|string|unique:users,cedula',
-            'edad' => 'nullable|integer|min:0',
-            'telefono' => 'nullable|string|max:20',
-            'departamento' => 'nullable|string|max:255',
-            'cargo' => 'nullable|string|max:255',
+            'password' => 'required|string|min:8',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::create($request->all());
+        // Registrar en Cognito
+        $cognitoResponse = $this->cognito->registerUser(
+            $request->correo,
+            $request->password
+        );
+
+        if (isset($cognitoResponse['error'])) {
+            return response()->json(['error' => $cognitoResponse['error']], 500);
+        }
+
+        // Guardar en la BD
+        $user = User::create($request->only(['correo', 'nombre', 'apellido', 'cedula']));
 
         return response()->json([
-            'message' => 'Usuario registrado exitosamente',
+            'message' => 'Usuario registrado en Cognito y BD exitosamente',
             'user' => $user,
+            'cognito' => $cognitoResponse,
         ], 201);
     }
 }
