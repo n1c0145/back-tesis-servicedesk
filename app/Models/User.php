@@ -23,6 +23,7 @@ class User extends Authenticatable
         'apellido',
         'cedula',
         'puesto',
+        'estado',
         'role_id',
     ];
 

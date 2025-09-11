@@ -55,8 +55,10 @@ class RegisterController extends Controller
         }
 
         // Guardar en la BD
-        $user = User::create($request->only(['correo', 'nombre', 'apellido', 'cedula', 'puesto', 'role_id']));
-
+        $user = User::create(
+            $request->only(['correo', 'nombre', 'apellido', 'cedula', 'puesto', 'role_id'])
+                + ['estado' => 1]  
+        );
         return response()->json([
             'message' => 'Usuario registrado en Cognito y BD exitosamente',
             'user' => $user,
