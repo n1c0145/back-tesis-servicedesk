@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('cedula')->unique();
+            $table->string('puesto')->nullable();
+            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
             $table->timestamps();
         });
 

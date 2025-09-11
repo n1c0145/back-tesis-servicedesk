@@ -25,6 +25,8 @@ class RegisterController extends Controller
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
             'cedula' => 'required|string|unique:users,cedula',
+            'puesto' => 'nullable|string|max:255',
+            'role_id' => 'required|exists:roles,id',
             'password' => 'required|string|min:8',
         ]);
 
@@ -53,7 +55,7 @@ class RegisterController extends Controller
         }
 
         // Guardar en la BD
-        $user = User::create($request->only(['correo', 'nombre', 'apellido', 'cedula']));
+        $user = User::create($request->only(['correo', 'nombre', 'apellido', 'cedula', 'puesto', 'role_id']));
 
         return response()->json([
             'message' => 'Usuario registrado en Cognito y BD exitosamente',
