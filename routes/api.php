@@ -13,6 +13,7 @@ Route::middleware('auth:api')->post('/change-password', [ChangePasswordControlle
 // Rutas protegidas con token 
 Route::middleware('cognito')->group(function () {
     Route::post('/change-password', [ChangePasswordController::class, 'changePassword']);
-    Route::patch('/users/{userId}/disable', [DisableUserController::class, 'disable']);
+    Route::patch('/users/disable/{userId}', [DisableUserController::class, 'disable']);
+
   
 });
