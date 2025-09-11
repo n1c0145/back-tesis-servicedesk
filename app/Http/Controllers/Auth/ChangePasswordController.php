@@ -12,7 +12,6 @@ class ChangePasswordController extends Controller
 
     public function __construct()
     {
-        // Configuración básica usando variables de entorno directamente
         $this->cognito = new CognitoIdentityProviderClient([
             'region'  => env('AWS_DEFAULT_REGION', 'us-east-1'),
             'version' => 'latest',
