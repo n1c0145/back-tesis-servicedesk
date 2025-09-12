@@ -15,7 +15,11 @@ Route::middleware('auth:api')->post('/change-password', [ChangePasswordControlle
 Route::middleware('cognito')->group(function () {
     Route::post('/change-password', [ChangePasswordController::class, 'changePassword']);
     Route::patch('/users/disable/{userId}', [DisableUserController::class, 'disable']);
-    Route::post('/projects', [ProjectController::class, 'store']);
+    Route::post('/create-projects', [ProjectController::class, 'store']);
+    Route::get('/projects', [ProjectController::class, 'index']);
+    Route::get('/projects/{id}', [ProjectController::class, 'show']);
+    Route::patch('/delete-project/{id}', [ProjectController::class, 'disable']);
+    Route::patch('/update-project/{id}', [ProjectController::class, 'update']);
 });
 
 
