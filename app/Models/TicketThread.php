@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TicketThread extends Model
 {
-    protected $fillable = ['ticket_id', 'user_id', 'mensaje'];
+    protected $fillable = ['ticket_id', 'user_id', 'mensaje', 'private'];
 
     public function ticket()
     {
