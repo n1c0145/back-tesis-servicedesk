@@ -35,4 +35,22 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Project::class, 'project_user');
     }
+    public function createdTickets()
+    {
+        return $this->hasMany(Ticket::class, 'created_by');
+    }
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'assigned_to');
+    }
+
+    public function closedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'closed_by');
+    }
+
+    public function ticketThreads()
+    {
+        return $this->hasMany(TicketThread::class, 'user_id');
+    }
 }
