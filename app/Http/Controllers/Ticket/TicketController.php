@@ -8,24 +8,24 @@ use App\Models\Ticket;
 use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
+use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
+    // Crear ticket con primer hilo
     public function store(Request $request)
     {
-        // Validación básica
         $data = $request->validate([
             'titulo' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'project_id' => 'required|exists:projects,id',
             'created_by' => 'required|exists:users,id',
             'mensaje_inicial' => 'required|string',
-            'archivos.*' => 'file|max:10240', // opcional, máximo 10MB por archivo
+            'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
         ]);
 
         DB::beginTransaction();
         try {
-            // Crear ticket
             $ticket = Ticket::create([
                 'titulo' => $data['titulo'],
                 'descripcion' => $data['descripcion'] ?? null,
@@ -36,7 +36,6 @@ class TicketController extends Controller
                 'status_id' => 1,
             ]);
 
-            // Crear primer hilo
             $thread = TicketThread::create([
                 'ticket_id' => $ticket->id,
                 'user_id' => $data['created_by'],
@@ -44,17 +43,20 @@ class TicketController extends Controller
                 'private' => 0,
             ]);
 
-            // Subir archivos (si hay)
+            $archivosSubidos = [];
+
             if ($request->hasFile('archivos')) {
                 foreach ($request->file('archivos') as $file) {
                     $name = time() . '_' . $file->getClientOriginalName();
                     $path = $file->storeAs("ticket_threads/{$thread->id}", $name, 's3');
 
-                    TicketThreadAttachment::create([
+                    $attachment = TicketThreadAttachment::create([
                         'thread_id' => $thread->id,
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => $path,
                     ]);
+
+                    $archivosSubidos[] = $attachment;
                 }
             }
 
@@ -63,13 +65,14 @@ class TicketController extends Controller
             return response()->json([
                 'ticket' => $ticket,
                 'primer_hilo' => $thread,
-                'archivos' => $thread->attachments()->get(),
+                'archivos' => $archivosSubidos,
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
     // Crear nuevo hilo
     public function addThread(Request $request)
     {
@@ -78,6 +81,7 @@ class TicketController extends Controller
             'user_id' => 'required|exists:users,id',
             'mensaje' => 'required|string',
             'private' => 'required|integer|in:0,1',
+            'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
         ]);
 
         DB::beginTransaction();
@@ -89,12 +93,30 @@ class TicketController extends Controller
                 'private' => $data['private'],
             ]);
 
+            $archivosSubidos = [];
+
+            if ($request->hasFile('archivos')) {
+                foreach ($request->file('archivos') as $file) {
+                    $name = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs("ticket_threads/{$thread->id}", $name, 's3');
+
+                    $attachment = TicketThreadAttachment::create([
+                        'thread_id' => $thread->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                    ]);
+
+                    $archivosSubidos[] = $attachment;
+                }
+            }
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'ticket' => $data['ticket_id'],
                 'nuevo_hilo' => $thread,
+                'archivos' => $archivosSubidos,
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
