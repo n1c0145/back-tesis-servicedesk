@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\DisableUserController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Ticket\TicketController;
+use App\Http\Controllers\Ticket\TicketViewController;
 
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
@@ -22,6 +23,8 @@ Route::middleware('cognito')->group(function () {
     Route::patch('/delete-project/{id}', [ProjectController::class, 'disable']);
     Route::patch('/update-project/{id}', [ProjectController::class, 'update']);
     Route::post('/create-ticket', [TicketController::class, 'store']);
+    Route::post('/new-thread', [TicketController::class, 'addThread']);
+    Route::get('/ticket/{id}', [TicketViewController::class, 'showTicket']);
 });
 
 
