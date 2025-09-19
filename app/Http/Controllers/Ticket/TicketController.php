@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
+use App\Models\TicketThreadAttachment;
 
 class TicketController extends Controller
 {
@@ -19,6 +20,7 @@ class TicketController extends Controller
             'project_id' => 'required|exists:projects,id',
             'created_by' => 'required|exists:users,id',
             'mensaje_inicial' => 'required|string',
+            'archivos.*' => 'file|max:10240', // opcional, máximo 10MB por archivo
         ]);
 
         DB::beginTransaction();
@@ -42,11 +44,26 @@ class TicketController extends Controller
                 'private' => 0,
             ]);
 
+            // Subir archivos (si hay)
+            if ($request->hasFile('archivos')) {
+                foreach ($request->file('archivos') as $file) {
+                    $name = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs("ticket_threads/{$thread->id}", $name, 's3');
+
+                    TicketThreadAttachment::create([
+                        'thread_id' => $thread->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                    ]);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
                 'ticket' => $ticket,
                 'primer_hilo' => $thread,
+                'archivos' => $thread->attachments()->get(),
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
