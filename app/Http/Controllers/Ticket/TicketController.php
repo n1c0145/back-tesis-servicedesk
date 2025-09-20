@@ -8,7 +8,6 @@ use App\Models\Ticket;
 use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
-use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
@@ -26,7 +25,17 @@ class TicketController extends Controller
 
         DB::beginTransaction();
         try {
+
+            // Generar ticket_number
+            $yearMonth = now()->format('ym');
+            $ultimoTicket = Ticket::where('ticket_number', 'like', $yearMonth . '%')
+                ->orderBy('ticket_number', 'desc')
+                ->first();
+            $correlativo = intval($ultimoTicket?->ticket_number ? substr($ultimoTicket->ticket_number, 4) : 0) + 1;
+            $ticketNumber = $yearMonth . str_pad($correlativo, 4, '0', STR_PAD_LEFT);
+
             $ticket = Ticket::create([
+                'ticket_number' => $ticketNumber,
                 'titulo' => $data['titulo'],
                 'descripcion' => $data['descripcion'] ?? null,
                 'project_id' => $data['project_id'],
@@ -81,6 +90,7 @@ class TicketController extends Controller
             'user_id' => 'required|exists:users,id',
             'mensaje' => 'required|string',
             'private' => 'required|integer|in:0,1',
+            'tiempo' => 'nullable|integer|min:0',
             'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
         ]);
 
@@ -92,6 +102,12 @@ class TicketController extends Controller
                 'mensaje' => $data['mensaje'],
                 'private' => $data['private'],
             ]);
+
+            if (isset($data['tiempo']) && $data['tiempo'] > 0) {
+                DB::table('tickets')
+                    ->where('id', $data['ticket_id'])
+                    ->increment('time', $data['tiempo']);
+            }
 
             $archivosSubidos = [];
 

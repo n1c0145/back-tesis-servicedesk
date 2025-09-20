@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Ticket extends Model
 {
     protected $fillable = [
+        'ticket_number',
         'titulo',
         'descripcion',
+        'time',
         'project_id',
         'created_by',
         'assigned_to',

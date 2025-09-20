@@ -19,7 +19,7 @@ class TicketViewController extends Controller
         // Generar URLs temporales para cada attachment
         foreach ($ticket->threads as $thread) {
             foreach ($thread->attachments as $attachment) {
-                $attachment->temp_url = $attachment->getTemporaryUrl(1440); // 1440 minutos = 1 día
+                $attachment->temp_url = $attachment->getTemporaryUrl(1440); 
             }
         }
 

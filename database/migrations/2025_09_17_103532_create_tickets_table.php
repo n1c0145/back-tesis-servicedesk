@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
+            $table->string('ticket_number', 10)->unique()->after('id');
+
             $table->string('titulo');
             $table->text('descripcion')->nullable();
+            $table->integer('time')->default(0);
+
 
             $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
 
