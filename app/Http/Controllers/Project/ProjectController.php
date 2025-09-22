@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Project;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\User;
+use App\Notifications\ProjectAssigned;
+
 
 class ProjectController extends Controller
 {
@@ -27,7 +30,16 @@ class ProjectController extends Controller
 
         if (!empty($data['user_ids'])) {
             $project->users()->attach($data['user_ids']);
+
+            // Disparar notificación para cada usuario asignado
+            foreach ($data['user_ids'] as $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $user->notify(new ProjectAssigned($project->nombre));
+                }
+            }
         }
+
 
         return response()->json($project->load('users'), 201);
     }
@@ -93,7 +105,7 @@ class ProjectController extends Controller
             'user_ids.*' => 'exists:users,id',
         ]);
 
-        
+
         if (isset($data['nombre'])) {
             $project->nombre = $data['nombre'];
         }
@@ -104,7 +116,7 @@ class ProjectController extends Controller
 
         // Actualizar usuarios 
         if (isset($data['user_ids'])) {
-            $project->users()->sync($data['user_ids']); 
+            $project->users()->sync($data['user_ids']);
         }
 
         return response()->json($project->load('users'), 200);

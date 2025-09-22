@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\DisableUserController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Ticket\TicketController;
 use App\Http\Controllers\Ticket\TicketViewController;
+use App\Http\Controllers\Notificaciones\NotificationController;
 
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
@@ -25,6 +26,7 @@ Route::middleware('cognito')->group(function () {
     Route::post('/create-ticket', [TicketController::class, 'store']);
     Route::post('/new-thread', [TicketController::class, 'addThread']);
     Route::get('/ticket/{id}', [TicketViewController::class, 'showTicket']);
+    Route::get('/notifications/{userId}', [NotificationController::class, 'allNotifications']);
+    Route::get('/notifications-unread/{userId}', [NotificationController::class, 'unreadNotifications']);
+    Route::post('/mark-read/{userId}/{notificationId}', [NotificationController::class, 'markAsRead']);
 });
-
-
