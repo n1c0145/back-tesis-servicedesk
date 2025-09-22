@@ -44,6 +44,7 @@ class TicketController extends Controller
                 'closed_by' => null,
                 'status_id' => 1,
             ]);
+            $ticket = $ticket->fresh();
 
             $thread = TicketThread::create([
                 'ticket_id' => $ticket->id,
