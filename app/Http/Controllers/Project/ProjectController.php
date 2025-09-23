@@ -105,7 +105,6 @@ class ProjectController extends Controller
             'user_ids.*' => 'exists:users,id',
         ]);
 
-
         if (isset($data['nombre'])) {
             $project->nombre = $data['nombre'];
         }
@@ -114,9 +113,18 @@ class ProjectController extends Controller
         }
         $project->save();
 
-        // Actualizar usuarios 
+        // Actualizar usuarios
         if (isset($data['user_ids'])) {
+            $currentUserIds = $project->users()->pluck('users.id')->toArray();
             $project->users()->sync($data['user_ids']);
+            $newUserIds = array_diff($data['user_ids'], $currentUserIds);
+
+            foreach ($newUserIds as $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $user->notify(new ProjectAssigned($project->nombre));
+                }
+            }
         }
 
         return response()->json($project->load('users'), 200);
