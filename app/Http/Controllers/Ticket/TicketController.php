@@ -9,6 +9,7 @@ use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
 use App\Notifications\TicketStatusChanged;
+use App\Notifications\TicketAssigned;
 
 class TicketController extends Controller
 {
@@ -175,6 +176,36 @@ class TicketController extends Controller
 
         return response()->json([
             'message' => 'Estado del ticket actualizado correctamente',
+            'ticket' => $ticket
+        ]);
+    }
+    //asiganr ticket a user
+    public function updateAssignedTo(Request $request, $id)
+    {
+        $ticket = Ticket::with('project')->find($id);
+
+        if (!$ticket) {
+            return response()->json([
+                'message' => 'Ticket no encontrado'
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'assigned_to' => 'required|integer|exists:users,id'
+        ]);
+
+        $ticket->update([
+            'assigned_to' => $data['assigned_to']
+        ]);
+
+        // Notificar al usuario asignado usando la relación assignee
+        $user = $ticket->assignee;
+        if ($user) {
+            $user->notify(new TicketAssigned($ticket->ticket_number, $ticket->project->nombre ?? 'Proyecto desconocido'));
+        }
+
+        return response()->json([
+            'message' => 'Ticket asignado correctamente',
             'ticket' => $ticket
         ]);
     }

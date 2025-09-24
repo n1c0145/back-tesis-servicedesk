@@ -30,4 +30,6 @@ Route::middleware('cognito')->group(function () {
     Route::get('/notifications-unread/{userId}', [NotificationController::class, 'unreadNotifications']);
     Route::post('/mark-read/{userId}/{notificationId}', [NotificationController::class, 'markAsRead']);
     Route::patch('/ticket-status/{id}', [TicketController::class, 'updateStatus']);
+    Route::patch('/ticket-assigned-to/{id}', [TicketController::class, 'updateAssignedTo']);
+
 });
