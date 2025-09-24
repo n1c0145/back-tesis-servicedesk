@@ -3,17 +3,16 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-
-class ProjectAssigned extends Notification
+class TicketStatusChanged extends Notification
 {
     use Queueable;
+
+    public $ticketNumber;
     public $projectName;
     public $newStatus;
-    public $ticketNumber;
+
     /**
      * Create a new notification instance.
      */
@@ -26,24 +25,29 @@ class ProjectAssigned extends Notification
 
     /**
      * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database']; // Aquí definimos base de datos
     }
 
     /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
+     * Get the array representation of the notification for the database.
      */
     public function toDatabase($notifiable): array
     {
         return [
             'title' => 'Actualización de ticket',
             'message' => "El ticket #{$this->ticketNumber} del proyecto '{$this->projectName}' fue actualizado a estado '{$this->newStatus}'.",
+        ];
+    }
+
+    public function toArray($notifiable): array
+    {
+        return [
+            'ticketNumber' => $this->ticketNumber,
+            'projectName' => $this->projectName,
+            'newStatus' => $this->newStatus,
         ];
     }
 }

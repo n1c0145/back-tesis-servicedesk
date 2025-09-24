@@ -29,4 +29,5 @@ Route::middleware('cognito')->group(function () {
     Route::get('/notifications/{userId}', [NotificationController::class, 'allNotifications']);
     Route::get('/notifications-unread/{userId}', [NotificationController::class, 'unreadNotifications']);
     Route::post('/mark-read/{userId}/{notificationId}', [NotificationController::class, 'markAsRead']);
+    Route::patch('/ticket-status/{id}', [TicketController::class, 'updateStatus']);
 });

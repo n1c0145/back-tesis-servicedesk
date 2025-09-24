@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
+use App\Notifications\TicketStatusChanged;
 
 class TicketController extends Controller
 {
@@ -144,5 +145,37 @@ class TicketController extends Controller
                 'detalles' => $e->getMessage(),
             ], 500);
         }
+    }
+    public function updateStatus(Request $request, $id)
+    {
+        $ticket = Ticket::with(['project', 'project.users', 'status'])->find($id);
+
+        if (!$ticket) {
+            return response()->json([
+                'message' => 'Ticket no encontrado'
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'status_id' => 'required|integer|exists:ticket_statuses,id'
+        ]);
+
+        $ticket->update([
+            'status_id' => $data['status_id']
+        ]);
+
+        $ticket->load('status');
+
+        $newStatus = $ticket->status->nombre ?? "ID {$data['status_id']}";
+        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
+
+        foreach ($ticket->project->users as $user) {
+            $user->notify(new TicketStatusChanged($ticket->ticket_number, $projectName, $newStatus));
+        }
+
+        return response()->json([
+            'message' => 'Estado del ticket actualizado correctamente',
+            'ticket' => $ticket
+        ]);
     }
 }
