@@ -30,12 +30,9 @@ class NotificationController extends Controller
         ], 200);
     }
 
-    public function markAsRead($userId, $notificationId)
+    public function markAsRead($notificationId)
     {
-        $user = User::findOrFail($userId);
-
-        $notification = $user->notifications()->where('id', $notificationId)->firstOrFail();
-
+        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($notificationId);
         $notification->markAsRead();
 
         return response()->json([
