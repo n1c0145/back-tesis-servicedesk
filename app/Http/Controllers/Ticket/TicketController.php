@@ -230,4 +230,38 @@ class TicketController extends Controller
             'ticket' => $ticket
         ]);
     }
+    // En TicketController.php
+
+    public function closeTicket(Request $request)
+    {
+        $data = $request->validate([
+            'ticket_id' => 'required|integer|exists:tickets,id',
+            'user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $ticket = Ticket::with(['project', 'project.users'])->find($data['ticket_id']);
+
+        if (!$ticket) {
+            return response()->json([
+                'message' => 'Ticket no encontrado'
+            ], 404);
+        }
+
+
+        $ticket->update([
+            'status_id' => 7,
+            'closed_by' => $data['user_id'],
+        ]);
+
+        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
+
+        foreach ($ticket->project->users as $user) {
+            $user->notify(new TicketStatusChanged($ticket->ticket_number, $projectName, 'Cerrado'));
+        }
+
+        return response()->json([
+            'message' => 'Ticket cerrado correctamente',
+            'ticket' => $ticket
+        ], 200);
+    }
 }
