@@ -16,10 +16,19 @@ services:
       DB_DATABASE: tesis_servicedesk
       DB_USERNAME: postgres
       DB_PASSWORD: root
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: null
+      MAIL_PASSWORD: null
+      MAIL_ENCRYPTION: null
+      MAIL_FROM_ADDRESS: no-reply@educativo.test
+      MAIL_FROM_NAME: "Servicio Desk Educativo"
     volumes:
       - ./:/var/www/html
     depends_on:
       - db
+      - mailhog
     command: php artisan serve --host=0.0.0.0 --port=8000
 
   db:
@@ -34,6 +43,14 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog_servicedesk
+    restart: always
+    ports:
+      - "1025:1025"   
+      - "8025:8025"   
 
 volumes:
   postgres_data:

@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    
+
     /**
      * The attributes that are mass assignable.
      *
@@ -52,5 +52,9 @@ class User extends Authenticatable
     public function ticketThreads()
     {
         return $this->hasMany(TicketThread::class, 'user_id');
+    }
+    public function routeNotificationForMail()
+    {
+        return $this->correo;
     }
 }

@@ -18,11 +18,9 @@ class NewTicketSla extends Notification
         $this->ticketNumber = $ticketNumber;
         $this->projectName = $projectName;
     }
-
     public function via(object $notifiable): array
     {
-        // 👇 ahora solo BD, pero aquí agregaremos 'mail' después
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toDatabase($notifiable): array
@@ -33,11 +31,11 @@ class NewTicketSla extends Notification
         ];
     }
 
-    // 👇 Preparado para más adelante
+
     public function toMail($notifiable)
     {
         return (new MailMessage)
             ->subject('Nuevo Ticket con SLA')
-            ->line("Se abrió un nuevo ticket con SLA #{$this->ticketNumber} en el proyecto '{$this->projectName}'.");
+            ->line("Se abrió un nuevo ticket con SLA #{$this->ticketNumber} en el proyecto '{$this->projectName}'");
     }
 }
