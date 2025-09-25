@@ -9,6 +9,8 @@ use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
 use App\Notifications\TicketStatusChanged;
+use App\Notifications\NewTicketNormal;
+use App\Notifications\NewTicketSla;
 use App\Notifications\TicketAssigned;
 
 class TicketController extends Controller
@@ -22,12 +24,12 @@ class TicketController extends Controller
             'project_id' => 'required|exists:projects,id',
             'created_by' => 'required|exists:users,id',
             'mensaje_inicial' => 'required|string',
+            'sla' => 'required|in:0,1',
             'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
         ]);
 
         DB::beginTransaction();
         try {
-
             // Generar ticket_number
             $yearMonth = now()->format('ym');
             $ultimoTicket = Ticket::where('ticket_number', 'like', $yearMonth . '%')
@@ -36,6 +38,7 @@ class TicketController extends Controller
             $correlativo = intval($ultimoTicket?->ticket_number ? substr($ultimoTicket->ticket_number, 4) : 0) + 1;
             $ticketNumber = $yearMonth . str_pad($correlativo, 4, '0', STR_PAD_LEFT);
 
+            // Crear ticket
             $ticket = Ticket::create([
                 'ticket_number' => $ticketNumber,
                 'titulo' => $data['titulo'],
@@ -45,6 +48,7 @@ class TicketController extends Controller
                 'assigned_to' => null,
                 'closed_by' => null,
                 'status_id' => 1,
+                'sla' => $data['sla'],
             ]);
             $ticket = $ticket->fresh();
 
@@ -56,7 +60,6 @@ class TicketController extends Controller
             ]);
 
             $archivosSubidos = [];
-
             if ($request->hasFile('archivos')) {
                 foreach ($request->file('archivos') as $file) {
                     $name = time() . '_' . $file->getClientOriginalName();
@@ -72,6 +75,25 @@ class TicketController extends Controller
                 }
             }
 
+            // Notificaciones
+            $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
+
+            if ($data['sla'] == 0) {
+                foreach ($ticket->project->users as $user) {
+                    $user->notify(new NewTicketNormal(
+                        $ticket->ticket_number,
+                        $ticket->project->nombre ?? 'Proyecto desconocido'
+                    ));
+                }
+            } else {
+                foreach ($ticket->project->users as $user) {
+                    $user->notify(new NewTicketSla(
+                        $ticket->ticket_number,
+                        $ticket->project->nombre ?? 'Proyecto desconocido'
+                    ));
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -84,7 +106,6 @@ class TicketController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
     // Crear nuevo hilo
     public function addThread(Request $request)
     {

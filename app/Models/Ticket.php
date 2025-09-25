@@ -11,6 +11,7 @@ class Ticket extends Model
         'titulo',
         'descripcion',
         'time',
+        'sla',
         'project_id',
         'created_by',
         'assigned_to',
