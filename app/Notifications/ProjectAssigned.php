@@ -17,11 +17,9 @@ class ProjectAssigned extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct($ticketNumber, $projectName, $newStatus)
+    public function __construct($projectName)
     {
-        $this->ticketNumber = $ticketNumber;
         $this->projectName = $projectName;
-        $this->newStatus = $newStatus;
     }
 
     /**
@@ -42,8 +40,8 @@ class ProjectAssigned extends Notification
     public function toDatabase($notifiable): array
     {
         return [
-            'title' => 'Actualización de ticket',
-            'message' => "El ticket #{$this->ticketNumber} del proyecto '{$this->projectName}' fue actualizado a estado '{$this->newStatus}'.",
+            'title' => 'Proyecto Asigando',
+            'message' => "Fuiste asignado al proyecto '{$this->projectName}'.",
         ];
     }
 }
