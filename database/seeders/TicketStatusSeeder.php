@@ -11,14 +11,13 @@ class TicketStatusSeeder extends Seeder
     public function run(): void
     {
         $statuses = [
-            ['nombre' => 'Abierto'], 
-            ['nombre' => 'Primera Respuesta'], 
-            ['nombre' => 'Se necesita mas Información'], 
-            ['nombre' => 'En Progreso'], 
-            ['nombre' => 'En Espera'], 
-            ['nombre' => 'Resuelto'], 
-            ['nombre' => 'Cerrado'], 
-            ['nombre' => 'Cancelado'], 
+            ['nombre' => 'Abierto'],
+            ['nombre' => 'Primera Respuesta'],
+            ['nombre' => 'Se necesita mas Información'],
+            ['nombre' => 'En Progreso'],
+            ['nombre' => 'En Espera'],
+            ['nombre' => 'Resuelto'],
+            ['nombre' => 'Cerrado'],
         ];
 
         foreach ($statuses as $status) {
