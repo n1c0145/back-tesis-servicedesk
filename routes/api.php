@@ -13,6 +13,7 @@ use App\Http\Controllers\Notificaciones\NotificationController;
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
 Route::middleware('auth:api')->post('/change-password', [ChangePasswordController::class, 'changePassword']);
+Route::post('/forgot-password-code', [ChangePasswordController::class, 'sendForgotPasswordCode']);
 
 // Rutas protegidas con token 
 Route::middleware('cognito')->group(function () {
@@ -32,5 +33,4 @@ Route::middleware('cognito')->group(function () {
     Route::patch('/ticket-status/{id}', [TicketController::class, 'updateStatus']);
     Route::patch('/ticket-assigned-to/{id}', [TicketController::class, 'updateAssignedTo']);
     Route::post('/close-ticket', [TicketController::class, 'closeTicket']);
-
 });

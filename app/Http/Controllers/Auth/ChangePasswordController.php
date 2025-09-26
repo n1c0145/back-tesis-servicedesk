@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
+use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+use App\Notifications\ForgotPasswordCode;
 
 class ChangePasswordController extends Controller
 {
@@ -43,5 +46,28 @@ class ChangePasswordController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function sendForgotPasswordCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'correo' => 'required|email|exists:users,correo',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('correo', $request->correo)->first();
+
+        $code = rand(10000, 99999);
+        $user->temporal_code = $code;
+        $user->save();
+
+        $user->notify(new ForgotPasswordCode($code));
+
+        return response()->json([
+            'message' => 'Código de recuperación enviado al correo.',
+        ]);
     }
 }
