@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\ChangePasswordController;
+use App\Http\Controllers\Auth\RestorePasswordController;
 use App\Http\Controllers\Auth\DisableUserController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Ticket\TicketController;
@@ -12,12 +12,13 @@ use App\Http\Controllers\Notificaciones\NotificationController;
 
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
-Route::middleware('auth:api')->post('/change-password', [ChangePasswordController::class, 'changePassword']);
-Route::post('/forgot-password-code', [ChangePasswordController::class, 'sendForgotPasswordCode']);
+Route::middleware('auth:api')->post('/change-password', [RestorePasswordController::class, 'changePassword']);
+Route::post('/forgot-password-code', [RestorePasswordController::class, 'sendForgotPasswordCode']);
+Route::post('/reset-password', [RestorePasswordController::class, 'resetPassword']);
 
 // Rutas protegidas con token 
 Route::middleware('cognito')->group(function () {
-    Route::post('/change-password', [ChangePasswordController::class, 'changePassword']);
+    Route::post('/change-password', [RestorePasswordController::class, 'changePassword']);
     Route::patch('/users/disable/{userId}', [DisableUserController::class, 'disable']);
     Route::post('/create-projects', [ProjectController::class, 'store']);
     Route::get('/projects', [ProjectController::class, 'index']);

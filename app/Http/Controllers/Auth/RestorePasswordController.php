@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use App\Notifications\ForgotPasswordCode;
 
-class ChangePasswordController extends Controller
+class RestorePasswordController extends Controller
 {
     protected $cognito;
 
@@ -68,6 +68,40 @@ class ChangePasswordController extends Controller
 
         return response()->json([
             'message' => 'Código de recuperación enviado al correo.',
+            'user' => $user
         ]);
+    }
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'code' => 'required|string',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        $user = User::where('id', $request->user_id)
+            ->where('temporal_code', $request->code)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Código inválido o expirado'], 400);
+        }
+
+        try {
+            // Cambiar la contraseña en Cognito 
+            $this->cognito->adminSetUserPassword([
+                'UserPoolId' => env('COGNITO_USER_POOL_ID'),
+                'Username'   => $user->correo,
+                'Password'   => $request->new_password,
+                'Permanent'  => true,
+            ]);
+
+            return response()->json([
+                'message' => 'Contraseña restablecida con éxito',
+                'user' => $user->makeHidden(['password', 'temporal_code'])
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }
