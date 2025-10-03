@@ -9,6 +9,7 @@ use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Ticket\TicketController;
 use App\Http\Controllers\Ticket\TicketViewController;
 use App\Http\Controllers\Notificaciones\NotificationController;
+use App\Http\Controllers\Profiles\ProfileController;
 
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
@@ -34,4 +35,6 @@ Route::middleware('cognito')->group(function () {
     Route::patch('/ticket-status/{id}', [TicketController::class, 'updateStatus']);
     Route::patch('/ticket-assigned-to/{id}', [TicketController::class, 'updateAssignedTo']);
     Route::post('/close-ticket', [TicketController::class, 'closeTicket']);
+    Route::get('/get-profile/{id}', [ProfileController::class, 'getProfile']);
+    Route::patch('/update-profile/{id}', [ProfileController::class, 'updateProfile']);
 });
