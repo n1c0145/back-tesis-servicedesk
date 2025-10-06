@@ -8,7 +8,7 @@ use App\Models\User;
 
 class ProfileController extends Controller
 {
-     public function getProfile($id)
+    public function getProfile($id)
     {
         $user = User::with('role')->find($id);
 
@@ -21,7 +21,7 @@ class ProfileController extends Controller
         return response()->json($user, 200);
     }
 
-     public function updateProfile(Request $request, $id)
+    public function updateProfile(Request $request, $id)
     {
         $user = User::find($id);
 
@@ -50,5 +50,16 @@ class ProfileController extends Controller
             'user'    => $user
         ], 200);
     }
+    public function getAllProfiles()
+    {
+        $users = User::with('role')->get();
 
+        if ($users->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay usuarios registrados'
+            ], 404);
+        }
+
+        return response()->json($users, 200);
+    }
 }
