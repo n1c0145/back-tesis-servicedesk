@@ -36,6 +36,7 @@ class ProfileController extends Controller
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
             'puesto' => 'required|string|max:255',
+            'role_id'  => 'nullable|exists:roles,id',
         ]);
 
         // Actualización
@@ -43,6 +44,7 @@ class ProfileController extends Controller
             'nombre'   => $request->nombre,
             'apellido' => $request->apellido,
             'puesto'   => $request->puesto,
+            'role_id'  => $request->role_id ?? $user->role_id,
         ]);
 
         return response()->json([

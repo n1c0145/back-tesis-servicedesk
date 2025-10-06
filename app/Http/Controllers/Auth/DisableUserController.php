@@ -18,11 +18,15 @@ class DisableUserController extends Controller
 
         $user = User::find($userId);
 
-        $user->estado = 0;
+        if (!$user) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        $user->estado = $user->estado ? 0 : 1;
         $user->save();
 
         return response()->json([
-            'message' => 'Usuario deshabilitado exitosamente',
+            'message' => $user->estado ? 'Usuario activado exitosamente' : 'Usuario deshabilitado exitosamente',
             'user' => $user
         ], 200);
     }
