@@ -19,13 +19,15 @@ class ProjectController extends Controller
             'descripcion' => 'nullable|string',
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'exists:users,id',
+            'created_by' => 'required|exists:users,id',
         ]);
 
 
         $project = Project::create([
             'nombre' => $data['nombre'],
             'descripcion' => $data['descripcion'] ?? null,
-            'estado' => 1
+            'estado' => 1,
+            'created_by' => $data['created_by'],
         ]);
 
         if (!empty($data['user_ids'])) {
@@ -47,12 +49,13 @@ class ProjectController extends Controller
     //Listar proyectos
     public function index()
     {
-        $projects = Project::with('users')
-            ->where('estado', 1)
+        $projects = Project::with(['users', 'creator:id,nombre,apellido'])
+            ->where('estado', 1) 
             ->get();
 
         return response()->json($projects, 200);
     }
+
 
     //Listar 1 proyecto
     public function show($id)

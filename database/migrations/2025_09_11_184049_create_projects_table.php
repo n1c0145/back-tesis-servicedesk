@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->text('descripcion')->nullable();
             $table->integer('estado')->default(1);
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
