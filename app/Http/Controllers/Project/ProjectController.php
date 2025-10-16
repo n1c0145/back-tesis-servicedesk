@@ -50,7 +50,7 @@ class ProjectController extends Controller
     public function index()
     {
         $projects = Project::with(['users', 'creator:id,nombre,apellido'])
-            ->where('estado', 1) 
+            ->where('estado', 1)
             ->get();
 
         return response()->json($projects, 200);
@@ -131,5 +131,25 @@ class ProjectController extends Controller
         }
 
         return response()->json($project->load('users'), 200);
+    }
+    public function projectsByUser(Request $request)
+    {
+        $data = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $user = User::find($data['user_id']);
+
+        $projects = $user->projects()
+            ->where('estado', 1)
+            ->get()
+            ->map(function ($project) {
+                return [
+                    'project_id' => $project->id,
+                    'nombre' => $project->nombre,
+                ];
+            });
+
+        return response()->json($projects, 200);
     }
 }

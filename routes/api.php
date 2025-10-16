@@ -38,4 +38,5 @@ Route::middleware('cognito')->group(function () {
     Route::get('/get-profile/{id}', [ProfileController::class, 'getProfile']);
     Route::patch('/update-profile/{id}', [ProfileController::class, 'updateProfile']);
     Route::get('/profiles', [ProfileController::class, 'getAllProfiles']);
+    Route::post('/projects-byuser', [ProjectController::class, 'projectsByUser']);
 });
