@@ -152,4 +152,24 @@ class ProjectController extends Controller
 
         return response()->json($projects, 200);
     }
+    public function usersByProject(Request $request)
+    {
+        $data = $request->validate([
+            'project_id' => 'required|exists:projects,id',
+        ]);
+
+        $project = Project::find($data['project_id']);
+
+        $users = $project->users()
+            ->select('users.id', 'users.nombre', 'users.apellido')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'user_name' => trim($user->nombre . ' ' . $user->apellido),
+                ];
+            });
+
+        return response()->json($users, 200);
+    }
 }
