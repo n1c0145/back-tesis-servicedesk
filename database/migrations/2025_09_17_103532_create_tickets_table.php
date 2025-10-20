@@ -30,6 +30,7 @@ return new class extends Migration
             $table->foreignId('closed_by')->nullable()->constrained('users')->onDelete('set null');
 
             $table->foreignId('status_id')->constrained('ticket_statuses')->onDelete('cascade');
+            $table->foreignId('priority_id')->nullable()->constrained('ticket_priorities')->onDelete('set null');
             $table->timestamps();
         });
     }

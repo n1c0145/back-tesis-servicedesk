@@ -16,7 +16,8 @@ class Ticket extends Model
         'created_by',
         'assigned_to',
         'closed_by',
-        'status_id'
+        'status_id',
+        'priority_id'
     ];
 
     public function project()
@@ -47,5 +48,9 @@ class Ticket extends Model
     public function threads()
     {
         return $this->hasMany(TicketThread::class);
+    }
+    public function priority()
+    {
+        return $this->belongsTo(TicketPriority::class, 'priority_id');
     }
 }
