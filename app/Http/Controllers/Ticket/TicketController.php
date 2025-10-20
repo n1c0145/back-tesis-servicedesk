@@ -26,6 +26,7 @@ class TicketController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'mensaje_inicial' => 'required|string',
             'sla' => 'required|in:0,1',
+            'priority_id' => 'nullable|exists:ticket_priorities,id',
             'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
         ]);
 
@@ -38,7 +39,15 @@ class TicketController extends Controller
                 ->first();
             $correlativo = intval($ultimoTicket?->ticket_number ? substr($ultimoTicket->ticket_number, 4) : 0) + 1;
             $ticketNumber = $yearMonth . str_pad($correlativo, 4, '0', STR_PAD_LEFT);
+            $priorityId = null;
 
+            if ($data['sla'] == 1) {
+
+                $priorityId = 4;
+            } else {
+
+                $priorityId = $data['priority_id'];
+            }
             // Crear ticket
             $ticket = Ticket::create([
                 'ticket_number' => $ticketNumber,
@@ -50,6 +59,7 @@ class TicketController extends Controller
                 'closed_by' => null,
                 'status_id' => 1,
                 'sla' => $data['sla'],
+                'priority_id' => $priorityId,
             ]);
             $ticket = $ticket->fresh();
 
