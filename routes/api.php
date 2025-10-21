@@ -40,4 +40,7 @@ Route::middleware('cognito')->group(function () {
     Route::get('/profiles', [ProfileController::class, 'getAllProfiles']);
     Route::post('/projects-byuser', [ProjectController::class, 'projectsByUser']);
     Route::post('/users-byproject', [ProjectController::class, 'usersByProject']);
+    Route::post('/tickets', [TicketViewController::class, 'listTickets']);
+    Route::get('/tickets-listprojects', [TicketViewController::class, 'listProjects']);
+    Route::get('/tickets-listusers', [TicketViewController::class, 'listUsers']);
 });
