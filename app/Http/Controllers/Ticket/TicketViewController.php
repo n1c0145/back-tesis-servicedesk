@@ -81,7 +81,7 @@ class TicketViewController extends Controller
                 'prioridad' => $ticket->priority->nombre ?? 'Sin prioridad',
                 'estado' => $ticket->status->nombre ?? 'Sin estado',
                 'proyecto' => $ticket->project->nombre ?? 'Sin proyecto',
-                'asignado_a' => $ticket->assignee->nombre ?? 'Sin asignar',
+                'created_by_id' => $ticket->creator->id ?? null,
                 'created_by' => trim(($ticket->creator->nombre ?? '') . ' ' . ($ticket->creator->apellido ?? '')),
                 'closed_by ' => $ticket->closedBy->nombre ?? null,
                 'created_at' => $ticket->created_at->format('m/d/y, h:i A'),
@@ -95,10 +95,11 @@ class TicketViewController extends Controller
         $users = User::select('id', 'nombre', 'apellido', 'puesto')->get();
 
         $usersData = $users->map(function ($user) {
+            $nombreCompletoPuesto = trim($user->nombre . ' ' . $user->apellido) . ' - ' . $user->puesto;
+
             return [
                 'id' => $user->id,
-                'nombre' => trim($user->nombre . ' ' . $user->apellido),
-                'puesto' => $user->puesto,
+                'user' => $nombreCompletoPuesto,
             ];
         });
 
