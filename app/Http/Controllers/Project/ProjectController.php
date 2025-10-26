@@ -161,12 +161,12 @@ class ProjectController extends Controller
         $project = Project::find($data['project_id']);
 
         $users = $project->users()
-            ->select('users.id', 'users.nombre', 'users.apellido')
+            ->select('users.id', 'users.nombre', 'users.apellido', 'users.puesto')
             ->get()
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
-                    'user_name' => trim($user->nombre . ' ' . $user->apellido),
+                    'user_name' => trim($user->nombre . ' ' . $user->apellido . ' - ' . $user->puesto),
                 ];
             });
 
