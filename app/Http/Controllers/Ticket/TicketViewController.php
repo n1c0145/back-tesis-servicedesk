@@ -136,6 +136,7 @@ class TicketViewController extends Controller
         // Estructura compatible con tu frontend
         $ticketsData = $tickets->map(function ($ticket) {
             return [
+                'id' => $ticket->id,
                 'ticket_number' => $ticket->ticket_number,
                 'titulo' => $ticket->titulo,
                 'prioridad' => $ticket->priority->nombre ?? 'Sin prioridad',
