@@ -12,21 +12,81 @@ class TicketViewController extends Controller
 {
     public function showTicket($id)
     {
-        $ticket = Ticket::with(['threads.user', 'threads.attachments'])->find($id);
+        $ticket = Ticket::with([
+            'threads.user',
+            'threads.attachments',
+            'project',
+            'creator',
+            'assignee',
+            'closedBy',
+            'status',
+            'priority'
+        ])->find($id);
 
         if (!$ticket) {
             return response()->json(['error' => 'Ticket no encontrado'], 404);
         }
 
-        // Generar URLs temporales para cada attachment
         foreach ($ticket->threads as $thread) {
             foreach ($thread->attachments as $attachment) {
                 $attachment->temp_url = $attachment->getTemporaryUrl(1440);
             }
+
+            if ($thread->user) {
+                $thread->user = [
+                    'id' => $thread->user->id,
+                    'nombre_completo' => trim($thread->user->nombre . ' ' . $thread->user->apellido),
+                ];
+            }
         }
 
-        return response()->json($ticket, 200);
+        $response = [
+            'id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'titulo' => $ticket->titulo,
+            'descripcion' => $ticket->descripcion,
+            'time' => $ticket->time,
+            'sla' => $ticket->sla,
+            'project_id' => $ticket->project_id,
+            'project_name' => $ticket->project->nombre ?? null,
+            'created_by' => $ticket->created_by,
+            'created_by_nombre' => $ticket->creator
+                ? trim($ticket->creator->nombre . ' ' . $ticket->creator->apellido)
+                : null,
+            'assigned_to' => $ticket->assigned_to,
+            'assigned_to_nombre' => $ticket->assignee
+                ? trim($ticket->assignee->nombre . ' ' . $ticket->assignee->apellido)
+                : null,
+            'closed_by' => $ticket->closed_by,
+            'closed_by_nombre' => $ticket->closedBy
+                ? trim($ticket->closedBy->nombre . ' ' . $ticket->closedBy->apellido)
+                : null,
+            'status_id' => $ticket->status_id,
+            'status_name' => $ticket->status->nombre ?? null,
+            'priority_id' => $ticket->priority_id,
+            'priority_name' => $ticket->priority->nombre ?? null,
+            'fecha_creacion' => $ticket->created_at,
+            'fecha_actualizacion' => $ticket->updated_at,
+            'threads' => $ticket->threads->map(function ($thread) {
+                return [
+                    'id' => $thread->id,
+                    'mensaje' => $thread->mensaje,
+                    'created_at' => $thread->created_at,
+                    'user' => $thread->user,
+                    'attachments' => $thread->attachments->map(function ($a) {
+                        return [
+                            'id' => $a->id,
+                            'nombre_archivo' => $a->file_name,
+                            'url' => $a->temp_url,
+                        ];
+                    }),
+                ];
+            }),
+        ];
+
+        return response()->json($response);
     }
+
 
     public function listTickets(Request $request)
     {

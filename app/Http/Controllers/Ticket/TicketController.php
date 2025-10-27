@@ -12,6 +12,7 @@ use App\Notifications\TicketStatusChanged;
 use App\Notifications\NewTicketNormal;
 use App\Notifications\NewTicketSla;
 use App\Notifications\TicketAssigned;
+use App\Notifications\TicketPriorityChanged;
 
 class TicketController extends Controller
 {
@@ -274,5 +275,36 @@ class TicketController extends Controller
             'message' => 'Ticket cerrado correctamente',
             'ticket' => $ticket
         ], 200);
+    }
+
+    public function updatePriority(Request $request, $id)
+    {
+        $ticket = Ticket::with(['project', 'project.users', 'priority'])->find($id);
+
+        if (!$ticket) {
+            return response()->json(['message' => 'Ticket no encontrado'], 404);
+        }
+
+        $data = $request->validate([
+            'priority_id' => 'required|integer|exists:ticket_priorities,id'
+        ]);
+
+        $ticket->update([
+            'priority_id' => $data['priority_id']
+        ]);
+
+        $ticket->load('priority');
+
+        $newPriority = $ticket->priority->nombre ?? "ID {$data['priority_id']}";
+        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
+
+        foreach ($ticket->project->users as $user) {
+            $user->notify(new TicketPriorityChanged($ticket->ticket_number, $projectName, $newPriority));
+        }
+
+        return response()->json([
+            'message' => 'Prioridad del ticket actualizada correctamente',
+            'ticket' => $ticket
+        ]);
     }
 }

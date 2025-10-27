@@ -43,4 +43,5 @@ Route::middleware('cognito')->group(function () {
     Route::post('/tickets', [TicketViewController::class, 'listTickets']);
     Route::get('/tickets-listprojects', [TicketViewController::class, 'listProjects']);
     Route::get('/tickets-listusers', [TicketViewController::class, 'listUsers']);
+    Route::patch('tickets/priority/{id}', [TicketController::class, 'updatePriority']);
 });
