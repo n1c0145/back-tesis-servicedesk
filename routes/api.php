@@ -32,9 +32,6 @@ Route::middleware('cognito')->group(function () {
     Route::get('/notifications/{userId}', [NotificationController::class, 'allNotifications']);
     Route::get('/notifications-unread/{userId}', [NotificationController::class, 'unreadNotifications']);
     Route::post('/mark-read/{notificationId}', [NotificationController::class, 'markAsRead']);
-    Route::patch('/ticket-status/{id}', [TicketController::class, 'updateStatus']);
-    Route::patch('/ticket-assigned-to/{id}', [TicketController::class, 'updateAssignedTo']);
-    Route::post('/close-ticket', [TicketController::class, 'closeTicket']);
     Route::get('/get-profile/{id}', [ProfileController::class, 'getProfile']);
     Route::patch('/update-profile/{id}', [ProfileController::class, 'updateProfile']);
     Route::get('/profiles', [ProfileController::class, 'getAllProfiles']);
@@ -43,5 +40,4 @@ Route::middleware('cognito')->group(function () {
     Route::post('/tickets', [TicketViewController::class, 'listTickets']);
     Route::get('/tickets-listprojects', [TicketViewController::class, 'listProjects']);
     Route::get('/tickets-listusers', [TicketViewController::class, 'listUsers']);
-    Route::patch('tickets/priority/{id}', [TicketController::class, 'updatePriority']);
 });

@@ -8,6 +8,8 @@ use App\Models\Ticket;
 use App\Models\TicketThread;
 use Illuminate\Support\Facades\DB;
 use App\Models\TicketThreadAttachment;
+use App\Models\TicketThreadHistory;
+use App\Models\User;
 use App\Notifications\TicketStatusChanged;
 use App\Notifications\NewTicketNormal;
 use App\Notifications\NewTicketSla;
@@ -105,6 +107,10 @@ class TicketController extends Controller
                     ));
                 }
             }
+            if ($ticket->assigned_to) {
+                $assignee = $ticket->assignee;
+                $assignee->notify(new TicketAssigned($ticket->ticket_number, $projectName));
+            }
 
             DB::commit();
 
@@ -118,7 +124,6 @@ class TicketController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    // Crear nuevo hilo
     public function addThread(Request $request)
     {
         $data = $request->validate([
@@ -128,6 +133,11 @@ class TicketController extends Controller
             'private' => 'required|integer|in:0,1',
             'tiempo' => 'nullable|integer|min:0',
             'archivos.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240',
+            // Campos opcionales
+            'status_id' => 'nullable|integer|exists:ticket_statuses,id',
+            'priority_id' => 'nullable|integer|exists:ticket_priorities,id',
+            'assigned_to' => 'nullable|integer|in:0,' . implode(',', User::pluck('id')->toArray()),
+
         ]);
 
         DB::beginTransaction();
@@ -138,15 +148,91 @@ class TicketController extends Controller
                 'mensaje' => $data['mensaje'],
                 'private' => $data['private'],
             ]);
+            $thread->refresh();
 
-            if (isset($data['tiempo']) && $data['tiempo'] > 0) {
-                DB::table('tickets')
-                    ->where('id', $data['ticket_id'])
-                    ->increment('time', $data['tiempo']);
+            $ticket = Ticket::with(['project', 'project.users', 'status', 'priority', 'assignee'])
+                ->find($data['ticket_id']);
+            $changes = [];
+
+            // tiempo que se adiciona
+            if (!empty($data['tiempo']) && $data['tiempo'] > 0) {
+                $ticket->increment('time', $data['tiempo']);
             }
 
-            $archivosSubidos = [];
+            // Cambio de estado
+            if (!empty($data['status_id']) && $data['status_id'] != $ticket->status_id) {
+                $oldStatus = $ticket->status->nombre ?? 'Desconocido';
+                $ticket->update(['status_id' => $data['status_id']]);
+                $ticket->load('status');
+                $newStatus = $ticket->status->nombre ?? 'Desconocido';
 
+                $changes['status'] = [
+                    'from' => $oldStatus,
+                    'to' => $newStatus
+                ];
+
+                if ($data['status_id'] == 7) {
+                    $ticket->update(['closed_by' => $data['user_id']]);
+                }
+
+                foreach ($ticket->project->users as $user) {
+                    $user->notify(new TicketStatusChanged($ticket->ticket_number, $ticket->project->nombre, $newStatus));
+                }
+            }
+
+            // Cambio de prioridad
+            if (!empty($data['priority_id']) && $data['priority_id'] != $ticket->priority_id) {
+                $oldPriority = $ticket->priority->nombre ?? 'Desconocido';
+                $ticket->update(['priority_id' => $data['priority_id']]);
+                $ticket->load('priority');
+                $newPriority = $ticket->priority->nombre ?? 'Desconocido';
+
+                $changes['priority'] = [
+                    'from' => $oldPriority,
+                    'to' => $newPriority
+                ];
+
+                foreach ($ticket->project->users as $user) {
+                    $user->notify(new TicketPriorityChanged($ticket->ticket_number, $ticket->project->nombre, $newPriority));
+                }
+            }
+
+            // Cambio de asignado
+            if (array_key_exists('assigned_to', $data) && $data['assigned_to'] !== $ticket->assigned_to) {
+                $oldUser = $ticket->assignee
+                    ? $ticket->assignee->nombre . ' ' . $ticket->assignee->apellido
+                    : 'Bandeja General del Proyecto';
+                $oldUserId = $ticket->assigned_to;
+
+                $newAssignedTo = ($data['assigned_to'] == 0) ? null : $data['assigned_to'];
+
+                $ticket->update(['assigned_to' => $newAssignedTo]);
+                $ticket->load('assignee');
+
+                $newUser = $ticket->assignee
+                    ? $ticket->assignee->nombre . ' ' . $ticket->assignee->apellido
+                    : 'Bandeja General del Proyecto';
+                $newUserId = $ticket->assigned_to;
+
+                $changes['assigned'] = [
+                    'from' => ['id' => $oldUserId, 'name' => $oldUser],
+                    'to' => ['id' => $newUserId, 'name' => $newUser],
+                ];
+
+                if ($ticket->assignee) {
+                    $ticket->assignee->notify(new TicketAssigned($ticket->ticket_number, $ticket->project->nombre));
+                }
+            }
+            if (!empty($changes)) {
+                TicketThreadHistory::create([
+                    'thread_id' => $thread->id,
+                    'ticket_id' => $ticket->id,
+                    'changes' => $changes
+                ]);
+            }
+
+            // archivos Adjuntos
+            $archivosSubidos = [];
             if ($request->hasFile('archivos')) {
                 foreach ($request->file('archivos') as $file) {
                     $name = time() . '_' . $file->getClientOriginalName();
@@ -166,8 +252,9 @@ class TicketController extends Controller
 
             return response()->json([
                 'success' => true,
-                'ticket' => $data['ticket_id'],
+                'ticket' => $ticket,
                 'nuevo_hilo' => $thread,
+                'changes' => $changes,
                 'archivos' => $archivosSubidos,
             ], 201);
         } catch (\Exception $e) {
@@ -179,132 +266,5 @@ class TicketController extends Controller
                 'detalles' => $e->getMessage(),
             ], 500);
         }
-    }
-    public function updateStatus(Request $request, $id)
-    {
-        $ticket = Ticket::with(['project', 'project.users', 'status'])->find($id);
-
-        if (!$ticket) {
-            return response()->json([
-                'message' => 'Ticket no encontrado'
-            ], 404);
-        }
-
-        $data = $request->validate([
-            'status_id' => 'required|integer|exists:ticket_statuses,id'
-        ]);
-
-        $ticket->update([
-            'status_id' => $data['status_id']
-        ]);
-
-        $ticket->load('status');
-
-        $newStatus = $ticket->status->nombre ?? "ID {$data['status_id']}";
-        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
-
-        foreach ($ticket->project->users as $user) {
-            $user->notify(new TicketStatusChanged($ticket->ticket_number, $projectName, $newStatus));
-        }
-
-        return response()->json([
-            'message' => 'Estado del ticket actualizado correctamente',
-            'ticket' => $ticket
-        ]);
-    }
-    //asiganr ticket a user
-    public function updateAssignedTo(Request $request, $id)
-    {
-        $ticket = Ticket::with('project')->find($id);
-
-        if (!$ticket) {
-            return response()->json([
-                'message' => 'Ticket no encontrado'
-            ], 404);
-        }
-
-        $data = $request->validate([
-            'assigned_to' => 'required|integer|exists:users,id'
-        ]);
-
-        $ticket->update([
-            'assigned_to' => $data['assigned_to']
-        ]);
-
-        // Notificar al usuario asignado usando la relación assignee
-        $user = $ticket->assignee;
-        if ($user) {
-            $user->notify(new TicketAssigned($ticket->ticket_number, $ticket->project->nombre ?? 'Proyecto desconocido'));
-        }
-
-        return response()->json([
-            'message' => 'Ticket asignado correctamente',
-            'ticket' => $ticket
-        ]);
-    }
-    // En TicketController.php
-
-    public function closeTicket(Request $request)
-    {
-        $data = $request->validate([
-            'ticket_id' => 'required|integer|exists:tickets,id',
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
-
-        $ticket = Ticket::with(['project', 'project.users'])->find($data['ticket_id']);
-
-        if (!$ticket) {
-            return response()->json([
-                'message' => 'Ticket no encontrado'
-            ], 404);
-        }
-
-
-        $ticket->update([
-            'status_id' => 7,
-            'closed_by' => $data['user_id'],
-        ]);
-
-        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
-
-        foreach ($ticket->project->users as $user) {
-            $user->notify(new TicketStatusChanged($ticket->ticket_number, $projectName, 'Cerrado'));
-        }
-
-        return response()->json([
-            'message' => 'Ticket cerrado correctamente',
-            'ticket' => $ticket
-        ], 200);
-    }
-
-    public function updatePriority(Request $request, $id)
-    {
-        $ticket = Ticket::with(['project', 'project.users', 'priority'])->find($id);
-
-        if (!$ticket) {
-            return response()->json(['message' => 'Ticket no encontrado'], 404);
-        }
-
-        $data = $request->validate([
-            'priority_id' => 'required|integer|exists:ticket_priorities,id'
-        ]);
-
-        $ticket->update([
-            'priority_id' => $data['priority_id']
-        ]);
-
-        $ticket->load('priority');
-
-        $newPriority = $ticket->priority->nombre ?? "ID {$data['priority_id']}";
-        $projectName = $ticket->project->nombre ?? 'Proyecto desconocido';
-
-        foreach ($ticket->project->users as $user) {
-            $user->notify(new TicketPriorityChanged($ticket->ticket_number, $projectName, $newPriority));
-        }
-
-        return response()->json([
-            'message' => 'Prioridad del ticket actualizada correctamente',
-            'ticket' => $ticket
-        ]);
     }
 }

@@ -21,4 +21,8 @@ class TicketThread extends Model
     {
         return $this->hasMany(TicketThreadAttachment::class, 'thread_id');
     }
+    public function histories()
+    {
+        return $this->hasMany(TicketThreadHistory::class, 'thread_id');
+    }
 }

@@ -13,8 +13,10 @@ class TicketViewController extends Controller
     public function showTicket($id)
     {
         $ticket = Ticket::with([
-            'threads.user',
-            'threads.attachments',
+            'threads' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+                $query->with(['user', 'attachments', 'histories']);
+            },
             'project',
             'creator',
             'assignee',
@@ -71,6 +73,7 @@ class TicketViewController extends Controller
                 return [
                     'id' => $thread->id,
                     'mensaje' => $thread->mensaje,
+                    'private' => $thread->private,
                     'created_at' => $thread->created_at,
                     'user' => $thread->user,
                     'attachments' => $thread->attachments->map(function ($a) {
@@ -78,6 +81,11 @@ class TicketViewController extends Controller
                             'id' => $a->id,
                             'nombre_archivo' => $a->file_name,
                             'url' => $a->temp_url,
+                        ];
+                    }),
+                    'histories' => $thread->histories->map(function ($h) {
+                        return [
+                            'changes' => $h->changes,
                         ];
                     }),
                 ];
@@ -90,7 +98,6 @@ class TicketViewController extends Controller
 
     public function listTickets(Request $request)
     {
-        // Iniciamos la query con las relaciones correctas
         $query = Ticket::with(['status', 'creator', 'assignee', 'closedBy', 'project', 'priority']);
 
         // Filtros opcionales
@@ -118,7 +125,7 @@ class TicketViewController extends Controller
             $query->where('priority_id', $request->priority_id);
         }
 
-        // Filtro por rango de fechas
+        // Filtro de fechas
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('created_at', [
                 $request->date_from . ' 00:00:00',
@@ -130,10 +137,8 @@ class TicketViewController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Ordenar del más reciente al más antiguo
         $tickets = $query->orderBy('created_at', 'desc')->get();
 
-        // Estructura compatible con tu frontend
         $ticketsData = $tickets->map(function ($ticket) {
             return [
                 'id' => $ticket->id,
