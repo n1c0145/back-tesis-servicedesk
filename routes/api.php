@@ -16,6 +16,9 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::middleware('auth:api')->post('/change-password', [RestorePasswordController::class, 'changePassword']);
 Route::post('/forgot-password-code', [RestorePasswordController::class, 'sendForgotPasswordCode']);
 Route::post('/reset-password', [RestorePasswordController::class, 'resetPassword']);
+Route::get('/notifications-poll/{userId}', [NotificationController::class, 'unreadCount']);
+
+
 
 // Rutas protegidas con token 
 Route::middleware('cognito')->group(function () {

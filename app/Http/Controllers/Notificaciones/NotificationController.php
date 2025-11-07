@@ -41,4 +41,13 @@ class NotificationController extends Controller
             'notification' => $notification
         ], 200);
     }
+
+    public function unreadCount(Request $request, $userId = null)
+    {
+        $user = $request->user() ?? User::findOrFail($userId);
+
+        return response()->json([
+            'unread_count' => $user->unreadNotifications()->count(),
+        ], 200);
+    }
 }
