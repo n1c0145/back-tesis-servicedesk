@@ -15,6 +15,7 @@ use App\Notifications\NewTicketNormal;
 use App\Notifications\NewTicketSla;
 use App\Notifications\TicketAssigned;
 use App\Notifications\TicketPriorityChanged;
+use App\Models\KnowledgeBase;
 
 class TicketController extends Controller
 {
@@ -173,6 +174,13 @@ class TicketController extends Controller
 
                 if ($data['status_id'] == 7) {
                     $ticket->update(['closed_by' => $data['user_id']]);
+
+                    KnowledgeBase::create([
+                        'ticket_id'      => $ticket->id,
+                        'ticket_number'  => $ticket->ticket_number,
+                        'titulo'          => $ticket->titulo,
+                        'descripcion'    => $ticket->descripcion,
+                    ]);
                 }
 
                 foreach ($ticket->project->users as $user) {
