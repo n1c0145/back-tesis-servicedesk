@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\KnowledgeBase;
 
 class TicketViewController extends Controller
 {
@@ -177,5 +178,78 @@ class TicketViewController extends Controller
         $projects = Project::select('id', 'nombre')->get();
 
         return response()->json($projects);
+    }
+
+    public function similarTickets(Request $request)
+    {
+        $data = $request->validate([
+            'titulo' => 'required|string',
+            'descripcion' => 'nullable|string',
+        ]);
+
+        $texto = strtolower($data['titulo'] . ' ' . ($data['descripcion'] ?? ''));
+
+        // Sacar palabras clave 
+        $palabras = collect(preg_split('/\s+/', $texto))
+            ->filter(fn($p) => strlen($p) > 3)
+            ->unique()
+            ->values();
+
+        if ($palabras->count() == 0) {
+            return response()->json([
+                'success' => true,
+                'matches' => [],
+            ]);
+        }
+
+        $query = KnowledgeBase::query();
+        $query->select('*');
+
+        $query->where(function ($q) use ($palabras) {
+            foreach ($palabras as $p) {
+                $q->orWhere('titulo', 'LIKE', "%$p%")
+                    ->orWhere('descripcion', 'LIKE', "%$p%");
+            }
+        });
+
+        $candidatos = $query->get();
+
+        // Calcular ranking
+        $resultados = $candidatos->map(function ($item) use ($palabras) {
+
+            $textoKB = strtolower($item->titulo . ' ' . $item->descripcion);
+
+            $score = 0;
+
+            foreach ($palabras as $p) {
+
+                // Coincidencia exacta
+                if (str_contains($textoKB, $p)) {
+                    $score += 2;
+                    continue;
+                }
+
+                //  Coincidencia aproximada 
+                $distancia = levenshtein($p, $textoKB);
+
+                if ($distancia <= 3) {
+
+                    $score += 1;
+                }
+            }
+
+            $item->similarity_score = $score;
+
+            return $item;
+        })
+            ->filter(fn($x) => $x->similarity_score >= 3)
+            ->sortByDesc('similarity_score')
+            ->take(3)
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'matches' => $resultados,
+        ]);
     }
 }
