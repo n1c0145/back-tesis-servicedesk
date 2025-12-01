@@ -4,7 +4,7 @@ FROM php:8.2-fpm
 # Instalar dependencias del sistema y extensiones PHP necesarias
 RUN apt-get update && apt-get install -y \
     git zip unzip libpq-dev libonig-dev \
-    && docker-php-ext-install pdo_pgsql mbstring opcache
+    && docker-php-ext-install pdo_pgsql mbstring opcache pcntl
 
 # Habilitar OPcache
 RUN docker-php-ext-enable opcache
@@ -19,7 +19,12 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copiar archivos del proyecto al contenedor
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader
 COPY . .
 
 # Dar permisos de almacenamiento
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN composer dump-autoload --optimize \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+

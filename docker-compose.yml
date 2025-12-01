@@ -8,12 +8,17 @@ services:
     ports:
       - "8000:8000"
     environment:
+      APP_ENV: local
+      APP_DEBUG: false                   
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: tesis_servicedesk
       DB_USERNAME: postgres
       DB_PASSWORD: root
+      CACHE_DRIVER: array                
+      SESSION_DRIVER: file
+      VIEW_COMPILED_PATH: /var/www/html/storage/framework/views
       MAIL_MAILER: smtp
       MAIL_HOST: mailhog
       MAIL_PORT: 1025
