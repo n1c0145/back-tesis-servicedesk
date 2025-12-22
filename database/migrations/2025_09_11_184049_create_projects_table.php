@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('nombre');
             $table->text('descripcion')->nullable();
+            $table->integer('firstresponse')->nullable();
+            $table->integer('maxresolution')->nullable();
+            $table->integer('effectivetime')->nullable();
+            $table->integer('hoursbank')->nullable();
             $table->integer('estado')->default(1);
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();

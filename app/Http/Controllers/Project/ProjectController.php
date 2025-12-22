@@ -20,6 +20,10 @@ class ProjectController extends Controller
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'exists:users,id',
             'created_by' => 'required|exists:users,id',
+            'firstresponse' => 'nullable|integer|min:0',
+            'maxresolution' => 'nullable|integer|min:0',
+            'effectivetime' => 'nullable|integer|min:0',
+            'hoursbank' => 'nullable|integer|min:0',
         ]);
 
 
@@ -28,6 +32,10 @@ class ProjectController extends Controller
             'descripcion' => $data['descripcion'] ?? null,
             'estado' => 1,
             'created_by' => $data['created_by'],
+            'firstresponse' => $data['firstresponse'] ?? null,
+            'maxresolution' => $data['maxresolution'] ?? null,
+            'effectivetime' => $data['effectivetime'] ?? null,
+            'hoursbank' => $data['hoursbank'] ?? null,
         ]);
 
         if (!empty($data['user_ids'])) {
@@ -106,6 +114,10 @@ class ProjectController extends Controller
             'descripcion' => 'nullable|string',
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'exists:users,id',
+            'firstresponse' => 'nullable|integer|min:0',
+            'maxresolution' => 'nullable|integer|min:0',
+            'effectivetime' => 'nullable|integer|min:0',
+            'hoursbank' => 'nullable|integer|min:0',
         ]);
 
         if (isset($data['nombre'])) {
@@ -113,6 +125,18 @@ class ProjectController extends Controller
         }
         if (array_key_exists('descripcion', $data)) {
             $project->descripcion = $data['descripcion'];
+        }
+        if (array_key_exists('firstresponse', $data)) {
+            $project->firstresponse = $data['firstresponse'];
+        }
+        if (array_key_exists('maxresolution', $data)) {
+            $project->maxresolution = $data['maxresolution'];
+        }
+        if (array_key_exists('effectivetime', $data)) {
+            $project->effectivetime = $data['effectivetime'];
+        }
+        if (array_key_exists('hoursbank', $data)) {
+            $project->hoursbank = $data['hoursbank'];
         }
         $project->save();
 

@@ -15,13 +15,17 @@ class Project extends Model
         'descripcion',
         'estado',
         'created_by',
+        'firstresponse',
+        'maxresolution',
+        'effectivetime',
+        'hoursbank',
     ];
 
     public function users()
     {
         return $this->belongsToMany(User::class, 'project_user');
     }
-        public function creator()
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }

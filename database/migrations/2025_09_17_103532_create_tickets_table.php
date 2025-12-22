@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->integer('time')->default(0);
             $table->integer('sla')->nullable();
+            $table->timestamp('firstupdate')->nullable();
 
 
             $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');

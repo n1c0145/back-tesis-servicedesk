@@ -155,6 +155,11 @@ class TicketController extends Controller
                 ->find($data['ticket_id']);
             $changes = [];
 
+            //actualizacion primera respuesta
+            if (is_null($ticket->firstupdate)) {
+                $ticket->update(['firstupdate' => now()]);
+            }
+
             // tiempo que se adiciona
             if (!empty($data['tiempo']) && $data['tiempo'] > 0) {
                 $ticket->increment('time', $data['tiempo']);
