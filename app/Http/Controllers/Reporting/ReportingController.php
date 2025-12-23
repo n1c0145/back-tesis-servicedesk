@@ -126,6 +126,63 @@ class ReportingController extends Controller
                 $prioridadesCount[$i] = (clone $ticketQuery)->where('priority_id', $i)->count();
             }
 
+            $allTickets = $ticketQuery->get(['created_at']);
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $dateFrom = Carbon::parse($validated['date_from']);
+                $dateTo = Carbon::parse($validated['date_to']);
+                $diasRango = $dateFrom->diffInDays($dateTo) + 1;
+                $fechaReferencia = $dateTo->endOfDay();
+            } else {
+                $dateFrom = now()->subDays(29)->startOfDay();
+                $dateTo = now()->endOfDay();
+                $diasRango = 30;
+                $fechaReferencia = $dateTo;
+            }
+
+            $contadores = [
+                '24h' => 0,
+                '24a3d' => 0,
+                '3a7d' => 0,
+                '7a15d' => 0,
+                '15a30d' => 0
+            ];
+
+            foreach ($allTickets as $ticket) {
+                if ($ticket->created_at && $ticket->created_at <= $fechaReferencia) {
+                    $diasAntiguedad = ceil($ticket->created_at->floatDiffInDays($fechaReferencia));
+
+                    if ($diasAntiguedad < 1) {
+                        $contadores['24h']++;
+                    } elseif ($diasAntiguedad <= 3) {
+                        $contadores['24a3d']++;
+                    } elseif ($diasAntiguedad <= 7) {
+                        $contadores['3a7d']++;
+                    } elseif ($diasAntiguedad <= 15) {
+                        $contadores['7a15d']++;
+                    } elseif ($diasAntiguedad <= 30) {
+                        $contadores['15a30d']++;
+                    }
+                }
+            }
+
+            $backlogAgingDistribution = [
+                ['name' => '< 24h', 'value' => $contadores['24h']]
+            ];
+
+            if ($diasRango >= 3) {
+                $backlogAgingDistribution[] = ['name' => '24h - 3d', 'value' => $contadores['24a3d']];
+            }
+            if ($diasRango >= 7) {
+                $backlogAgingDistribution[] = ['name' => '3d - 7d', 'value' => $contadores['3a7d']];
+            }
+            if ($diasRango >= 15) {
+                $backlogAgingDistribution[] = ['name' => '7d - 15d', 'value' => $contadores['7a15d']];
+            }
+            if ($diasRango >= 30) {
+                $backlogAgingDistribution[] = ['name' => '15d - 30d', 'value' => $contadores['15a30d']];
+            }
+
             $report = [
                 'report_parameters' => [
                     'project_id' => $validated['project_id'] ?? null,
@@ -219,7 +276,8 @@ class ReportingController extends Controller
                             'name' => 'Sin asignar',
                             'value' => $prioridadesCount[4] ?? 0
                         ]
-                    ]
+                    ],
+                    'ticket_aging' => $backlogAgingDistribution
                 ]
             ];
 
@@ -301,7 +359,7 @@ class ReportingController extends Controller
                 : 0;
 
             $maxResolutionQuery = (clone $ticketQuery)
-                ->where('status_id', 7); 
+                ->where('status_id', 7);
 
             $maxResolutionTickets = $maxResolutionQuery->get();
 
@@ -336,7 +394,7 @@ class ReportingController extends Controller
             $effectiveTimeIncumplidos = 0;
 
             foreach ($effectiveTimeTickets as $ticket) {
-                $tiempoHoras = $ticket->time / 60; 
+                $tiempoHoras = $ticket->time / 60;
 
                 if ($tiempoHoras <= $project->effectivetime) {
                     $effectiveTimeCumplidos++;
@@ -359,10 +417,10 @@ class ReportingController extends Controller
 
             $totalHorasUtilizadas = 0;
             foreach ($hoursBankTickets as $ticket) {
-                $totalHorasUtilizadas += ($ticket->time / 60); 
+                $totalHorasUtilizadas += ($ticket->time / 60);
             }
 
-            $hoursBank = $project->hoursbank; 
+            $hoursBank = $project->hoursbank;
             $horasRestantes = max(0, $hoursBank - $totalHorasUtilizadas);
             $porcentajeHorasUtilizadas = $hoursBank > 0
                 ? round(($totalHorasUtilizadas / $hoursBank) * 100, 2)
