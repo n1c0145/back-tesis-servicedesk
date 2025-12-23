@@ -236,4 +236,204 @@ class ReportingController extends Controller
             ], 500);
         }
     }
+
+    public function generateSlaReport(Request $request)
+    {
+        try {
+            // Validar los parámetros de entrada
+            $validated = $request->validate([
+                'project_id' => 'required|integer|exists:projects,id',
+                'date_from' => 'nullable|date_format:Y-m-d|required_with:date_to',
+                'date_to' => 'nullable|date_format:Y-m-d|required_with:date_from',
+            ]);
+
+            $project = Project::findOrFail($validated['project_id']);
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $dateFrom = Carbon::parse($validated['date_from'])->startOfDay();
+                $dateTo = Carbon::parse($validated['date_to'])->endOfDay();
+            } else {
+                $now = Carbon::now();
+                $dateFrom = Carbon::create($now->year, $now->month, 1)->startOfDay();
+                $dateTo = $now->endOfDay();
+            }
+
+            $baseQuery = function () use ($validated, $dateFrom, $dateTo) {
+                $query = Ticket::query();
+
+                $query->where('project_id', $validated['project_id']);
+
+                $query->whereBetween('created_at', [$dateFrom, $dateTo]);
+
+                return $query;
+            };
+
+            $ticketQuery = $baseQuery();
+
+            $totalTickets = $ticketQuery->count();
+            $ticketsWithSLA = (clone $ticketQuery)->where('sla', 1)->count();
+            $ticketsWithoutSLA = (clone $ticketQuery)->where('sla', 0)->count();
+
+            $firstResponseQuery = (clone $ticketQuery)
+                ->where('sla', 1)
+                ->whereNotNull('firstupdate');
+
+            $firstResponseTickets = $firstResponseQuery->get();
+
+            $firstResponseCumplidos = 0;
+            $firstResponseIncumplidos = 0;
+
+            foreach ($firstResponseTickets as $ticket) {
+                if ($ticket->created_at && $ticket->firstupdate) {
+                    $tiempoPrimeraRespuesta = $ticket->created_at->diffInMinutes($ticket->firstupdate);
+
+                    if ($tiempoPrimeraRespuesta <= $project->firstresponse) {
+                        $firstResponseCumplidos++;
+                    } else {
+                        $firstResponseIncumplidos++;
+                    }
+                }
+            }
+
+            $totalFirstResponse = $firstResponseCumplidos + $firstResponseIncumplidos;
+            $porcentajeFirstResponse = $totalFirstResponse > 0
+                ? round(($firstResponseCumplidos / $totalFirstResponse) * 100, 2)
+                : 0;
+
+            $maxResolutionQuery = (clone $ticketQuery)
+                ->where('status_id', 7); 
+
+            $maxResolutionTickets = $maxResolutionQuery->get();
+
+            $maxResolutionCumplidos = 0;
+            $maxResolutionIncumplidos = 0;
+
+            foreach ($maxResolutionTickets as $ticket) {
+                if ($ticket->created_at && $ticket->updated_at) {
+                    $tiempoResolucionDias = $ticket->created_at->diffInDays($ticket->updated_at);
+
+                    if ($tiempoResolucionDias <= $project->maxresolution) {
+                        $maxResolutionCumplidos++;
+                    } else {
+                        $maxResolutionIncumplidos++;
+                    }
+                }
+            }
+
+            $totalMaxResolution = $maxResolutionCumplidos + $maxResolutionIncumplidos;
+            $porcentajeMaxResolution = $totalMaxResolution > 0
+                ? round(($maxResolutionCumplidos / $totalMaxResolution) * 100, 2)
+                : 0;
+
+            $effectiveTimeQuery = (clone $ticketQuery)
+                ->where('sla', 1)
+                ->whereNotNull('time')
+                ->where('time', '>', 0);
+
+            $effectiveTimeTickets = $effectiveTimeQuery->get();
+
+            $effectiveTimeCumplidos = 0;
+            $effectiveTimeIncumplidos = 0;
+
+            foreach ($effectiveTimeTickets as $ticket) {
+                $tiempoHoras = $ticket->time / 60; 
+
+                if ($tiempoHoras <= $project->effectivetime) {
+                    $effectiveTimeCumplidos++;
+                } else {
+                    $effectiveTimeIncumplidos++;
+                }
+            }
+
+            $totalEffectiveTime = $effectiveTimeCumplidos + $effectiveTimeIncumplidos;
+            $porcentajeEffectiveTime = $totalEffectiveTime > 0
+                ? round(($effectiveTimeCumplidos / $totalEffectiveTime) * 100, 2)
+                : 0;
+
+            $hoursBankQuery = (clone $ticketQuery)
+                ->where('sla', 1)
+                ->whereNotNull('time')
+                ->where('time', '>', 0);
+
+            $hoursBankTickets = $hoursBankQuery->get();
+
+            $totalHorasUtilizadas = 0;
+            foreach ($hoursBankTickets as $ticket) {
+                $totalHorasUtilizadas += ($ticket->time / 60); 
+            }
+
+            $hoursBank = $project->hoursbank; 
+            $horasRestantes = max(0, $hoursBank - $totalHorasUtilizadas);
+            $porcentajeHorasUtilizadas = $hoursBank > 0
+                ? round(($totalHorasUtilizadas / $hoursBank) * 100, 2)
+                : ($totalHorasUtilizadas > 0 ? 100 : 0);
+
+            if ($totalHorasUtilizadas > $hoursBank) {
+                $porcentajeHorasUtilizadas = round(($totalHorasUtilizadas / $hoursBank) * 100, 2);
+            }
+
+            $report = [
+                'report_parameters' => [
+                    'project_id' => $validated['project_id'],
+                    'project_name' => $project->nombre,
+                    'date_from' => $dateFrom->format('Y-m-d'),
+                    'date_to' => $dateTo->format('Y-m-d'),
+                    'generated_at' => now()->toDateTimeString(),
+                    'sla_rules' => [
+                        'firstresponse_minutes' => $project->firstresponse,
+                        'maxresolution_days' => $project->maxresolution,
+                        'effectivetime_hours' => $project->effectivetime,
+                        'hoursbank_hours' => $project->hoursbank,
+                    ]
+                ],
+                'tickets_summary' => [
+                    'total_tickets' => $totalTickets,
+                    'tickets_with_sla' => $ticketsWithSLA,
+                    'tickets_without_sla' => $ticketsWithoutSLA,
+                ],
+                'sla_metrics' => [
+                    'first_response' => [
+                        'compliant' => $firstResponseCumplidos,
+                        'non_compliant' => $firstResponseIncumplidos,
+                        'total_analyzed' => $totalFirstResponse,
+                        'compliance_percentage' => $porcentajeFirstResponse, // Número sin %
+                        'target_minutes' => $project->firstresponse
+                    ],
+                    'max_resolution' => [
+                        'compliant' => $maxResolutionCumplidos,
+                        'non_compliant' => $maxResolutionIncumplidos,
+                        'total_analyzed' => $totalMaxResolution,
+                        'compliance_percentage' => $porcentajeMaxResolution, // Número sin %
+                        'target_days' => $project->maxresolution
+                    ],
+                    'effective_time' => [
+                        'compliant' => $effectiveTimeCumplidos,
+                        'non_compliant' => $effectiveTimeIncumplidos,
+                        'total_analyzed' => $totalEffectiveTime,
+                        'compliance_percentage' => $porcentajeEffectiveTime, // Número sin %
+                        'target_hours' => $project->effectivetime
+                    ],
+                    'hours_bank' => [
+                        'total_hours_used' => round($totalHorasUtilizadas, 2),
+                        'hours_contracted' => $project->hoursbank,
+                        'hours_remaining' => round($horasRestantes, 2),
+                        'utilization_percentage' => $porcentajeHorasUtilizadas, // Número sin %
+                        'status' => $horasRestantes > 0 ? 'available' : 'exceeded'
+                    ]
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reporte SLA generado exitosamente',
+                'data' => $report
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el reporte SLA',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -46,4 +46,5 @@ Route::middleware('cognito')->group(function () {
     Route::get('/tickets-listusers', [TicketViewController::class, 'listUsers']);
     Route::post('/similar-tickets', [TicketViewController::class, 'similarTickets']);
     Route::post('/general-report', [ReportingController::class, 'generateReport']);
+    Route::post('/sla-report', [ReportingController::class, 'generateSlaReport']);
 });
