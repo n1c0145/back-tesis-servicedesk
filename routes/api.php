@@ -10,6 +10,7 @@ use App\Http\Controllers\Ticket\TicketController;
 use App\Http\Controllers\Ticket\TicketViewController;
 use App\Http\Controllers\Notificaciones\NotificationController;
 use App\Http\Controllers\Profiles\ProfileController;
+use App\Http\Controllers\Reporting\ReportingController;
 
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
@@ -44,4 +45,5 @@ Route::middleware('cognito')->group(function () {
     Route::get('/tickets-listprojects', [TicketViewController::class, 'listProjects']);
     Route::get('/tickets-listusers', [TicketViewController::class, 'listUsers']);
     Route::post('/similar-tickets', [TicketViewController::class, 'similarTickets']);
+    Route::post('/general-report', [ReportingController::class, 'generateReport']);
 });
