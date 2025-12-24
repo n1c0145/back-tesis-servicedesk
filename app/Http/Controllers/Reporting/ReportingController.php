@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Reporting;
 use App\Models\Ticket;
 use App\Models\Project;
 use App\Models\TicketThread;
+use App\Models\TicketThreadHistory;
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -183,6 +185,120 @@ class ReportingController extends Controller
                 $backlogAgingDistribution[] = ['name' => '15d - 30d', 'value' => $contadores['15a30d']];
             }
 
+            $historyTimeQuery = TicketThreadHistory::query()
+                ->leftJoin('ticket_threads', 'ticket_thread_histories.thread_id', '=', 'ticket_threads.id')
+                ->leftJoin('tickets', 'ticket_threads.ticket_id', '=', 'tickets.id');
+
+            if (!empty($validated['project_id'])) {
+                $historyTimeQuery->where('tickets.project_id', $validated['project_id']);
+            }
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $historyTimeQuery->whereBetween('ticket_thread_histories.created_at', [
+                    Carbon::parse($validated['date_from'])->startOfDay(),
+                    Carbon::parse($validated['date_to'])->endOfDay()
+                ]);
+            }
+
+            $totalTimeHistory = $historyTimeQuery->sum('ticket_thread_histories.time');
+
+            $projectsTimeQuery = Project::query()
+                ->leftJoin('tickets', 'projects.id', '=', 'tickets.project_id')
+                ->leftJoin('ticket_threads', 'tickets.id', '=', 'ticket_threads.ticket_id')
+                ->leftJoin('ticket_thread_histories', 'ticket_threads.id', '=', 'ticket_thread_histories.thread_id')
+                ->selectRaw('projects.id, projects.nombre, COALESCE(SUM(ticket_thread_histories.time), 0) as total_time')
+                ->groupBy('projects.id', 'projects.nombre');
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $projectsTimeQuery->whereBetween('ticket_thread_histories.created_at', [
+                    Carbon::parse($validated['date_from'])->startOfDay(),
+                    Carbon::parse($validated['date_to'])->endOfDay()
+                ]);
+            }
+
+            if (!empty($validated['project_id'])) {
+                $projectsTimeQuery->where('projects.id', $validated['project_id']);
+            }
+
+            $topProjects = $projectsTimeQuery
+                ->orderByDesc('total_time')
+                ->limit(5)
+                ->get()
+                ->map(function ($project) {
+                    return [
+                        'name' => $project->nombre,
+                        'value' => (int)$project->total_time
+                    ];
+                })
+                ->toArray();
+
+            $usersTimeQuery = User::query()
+                ->leftJoin('ticket_threads', 'users.id', '=', 'ticket_threads.user_id')
+                ->leftJoin('ticket_thread_histories', 'ticket_threads.id', '=', 'ticket_thread_histories.thread_id')
+                ->selectRaw('users.id, users.nombre || \' \' || users.apellido as nombre_completo, COALESCE(SUM(ticket_thread_histories.time), 0) as total_time')
+                ->groupBy('users.id', 'users.nombre', 'users.apellido');
+
+            if (!empty($filteredTicketIds)) {
+                $usersTimeQuery->whereIn('ticket_threads.ticket_id', $filteredTicketIds);
+            }
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $usersTimeQuery->whereBetween('ticket_thread_histories.created_at', [
+                    Carbon::parse($validated['date_from'])->startOfDay(),
+                    Carbon::parse($validated['date_to'])->endOfDay()
+                ]);
+            }
+
+            if (!empty($validated['project_id'])) {
+                $usersTimeQuery->whereExists(function ($query) use ($validated) {
+                    $query->select(DB::raw(1))
+                        ->from('tickets')
+                        ->whereColumn('tickets.id', 'ticket_threads.ticket_id')
+                        ->where('tickets.project_id', $validated['project_id']);
+                });
+            }
+
+            $topUsers = $usersTimeQuery
+                ->orderByDesc('total_time')
+                ->limit(5)
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'name' => $user->nombre_completo,
+                        'value' => (int)$user->total_time
+                    ];
+                })
+                ->toArray();
+
+            $ticketsTimeQuery = Ticket::query()
+                ->leftJoin('ticket_threads', 'tickets.id', '=', 'ticket_threads.ticket_id')
+                ->leftJoin('ticket_thread_histories', 'ticket_threads.id', '=', 'ticket_thread_histories.thread_id')
+                ->selectRaw('tickets.id, tickets.ticket_number, tickets.titulo, COALESCE(SUM(ticket_thread_histories.time), 0) as total_time')
+                ->groupBy('tickets.id', 'tickets.ticket_number', 'tickets.titulo');
+
+            if (!empty($validated['project_id'])) {
+                $ticketsTimeQuery->where('tickets.project_id', $validated['project_id']);
+            }
+
+            if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+                $ticketsTimeQuery->whereBetween('ticket_thread_histories.created_at', [
+                    Carbon::parse($validated['date_from'])->startOfDay(),
+                    Carbon::parse($validated['date_to'])->endOfDay()
+                ]);
+            }
+
+            $topTickets = $ticketsTimeQuery
+                ->orderByDesc('total_time')
+                ->limit(5)
+                ->get()
+                ->map(function ($ticket) {
+                    return [
+                        'name' => "#{$ticket->ticket_number} - {$ticket->titulo}",
+                        'value' => (int)$ticket->total_time
+                    ];
+                })
+                ->toArray();
+
             $report = [
                 'report_parameters' => [
                     'project_id' => $validated['project_id'] ?? null,
@@ -207,6 +323,9 @@ class ReportingController extends Controller
                     'total_updates' => $totalThreads,
                     'public_updates' => $publicThreads,
                     'private_updates' => $privateThreads,
+                ],
+                'time_metrics' => [
+                    'total_history_time' => $totalTimeHistory,
                 ],
                 'charts' => [
                     'open_vs_close' => [
@@ -277,7 +396,10 @@ class ReportingController extends Controller
                             'value' => $prioridadesCount[4] ?? 0
                         ]
                     ],
-                    'ticket_aging' => $backlogAgingDistribution
+                    'ticket_aging' => $backlogAgingDistribution,
+                    'top_projects_time' => $topProjects,
+                    'top_users_time' => $topUsers,
+                    'top_tickets_time' => $topTickets
                 ]
             ];
 
