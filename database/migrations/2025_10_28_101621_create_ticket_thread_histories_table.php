@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('thread_id')->constrained('ticket_threads')->onDelete('cascade');
 
             $table->json('changes')->nullable();
+            $table->integer('time')->default(0);
 
             $table->timestamps();
         });

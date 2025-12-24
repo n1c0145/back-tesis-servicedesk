@@ -240,7 +240,8 @@ class TicketController extends Controller
                 TicketThreadHistory::create([
                     'thread_id' => $thread->id,
                     'ticket_id' => $ticket->id,
-                    'changes' => $changes
+                    'changes' => $changes,
+                    'time' => $data['tiempo'] ?? 0
                 ]);
             }
 

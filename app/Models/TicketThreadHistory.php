@@ -9,6 +9,7 @@ class TicketThreadHistory extends Model
     protected $fillable = [
         'thread_id',
         'changes',
+        'time',
     ];
 
     protected $casts = [
@@ -19,5 +20,4 @@ class TicketThreadHistory extends Model
     {
         return $this->belongsTo(TicketThread::class, 'thread_id');
     }
-
 }
