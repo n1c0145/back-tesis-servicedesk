@@ -10,6 +10,7 @@ use App\Http\Controllers\Ticket\TicketController;
 use App\Http\Controllers\Ticket\TicketViewController;
 use App\Http\Controllers\Notificaciones\NotificationController;
 use App\Http\Controllers\Profiles\ProfileController;
+use App\Http\Controllers\Reporting\HomeController;
 use App\Http\Controllers\Reporting\ReportingController;
 
 Route::post('/register', [RegisterController::class, 'register']);
@@ -47,4 +48,5 @@ Route::middleware('cognito')->group(function () {
     Route::post('/similar-tickets', [TicketViewController::class, 'similarTickets']);
     Route::post('/general-report', [ReportingController::class, 'generateReport']);
     Route::post('/sla-report', [ReportingController::class, 'generateSlaReport']);
+     Route::post('/home', [HomeController::class, 'homeView']);
 });
