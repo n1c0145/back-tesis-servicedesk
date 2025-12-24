@@ -531,7 +531,6 @@ class ReportingController extends Controller
                 : 0;
 
             $hoursBankQuery = (clone $ticketQuery)
-                ->where('sla', 1)
                 ->whereNotNull('time')
                 ->where('time', '>', 0);
 
@@ -576,28 +575,28 @@ class ReportingController extends Controller
                         'compliant' => $firstResponseCumplidos,
                         'non_compliant' => $firstResponseIncumplidos,
                         'total_analyzed' => $totalFirstResponse,
-                        'compliance_percentage' => $porcentajeFirstResponse, // Número sin %
+                        'compliance_percentage' => $porcentajeFirstResponse, 
                         'target_minutes' => $project->firstresponse
                     ],
                     'max_resolution' => [
                         'compliant' => $maxResolutionCumplidos,
                         'non_compliant' => $maxResolutionIncumplidos,
                         'total_analyzed' => $totalMaxResolution,
-                        'compliance_percentage' => $porcentajeMaxResolution, // Número sin %
+                        'compliance_percentage' => $porcentajeMaxResolution, 
                         'target_days' => $project->maxresolution
                     ],
                     'effective_time' => [
                         'compliant' => $effectiveTimeCumplidos,
                         'non_compliant' => $effectiveTimeIncumplidos,
                         'total_analyzed' => $totalEffectiveTime,
-                        'compliance_percentage' => $porcentajeEffectiveTime, // Número sin %
+                        'compliance_percentage' => $porcentajeEffectiveTime, 
                         'target_hours' => $project->effectivetime
                     ],
                     'hours_bank' => [
                         'total_hours_used' => round($totalHorasUtilizadas, 2),
                         'hours_contracted' => $project->hoursbank,
                         'hours_remaining' => round($horasRestantes, 2),
-                        'utilization_percentage' => $porcentajeHorasUtilizadas, // Número sin %
+                        'utilization_percentage' => $porcentajeHorasUtilizadas, 
                         'status' => $horasRestantes > 0 ? 'available' : 'exceeded'
                     ]
                 ]
