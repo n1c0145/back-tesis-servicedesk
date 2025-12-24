@@ -86,7 +86,8 @@ class TicketViewController extends Controller
                     }),
                     'histories' => $thread->histories->map(function ($h) {
                         return [
-                            'changes' => $h->changes,
+                            'time' => $h->time,
+                            'changes' => $h->changes
                         ];
                     }),
                 ];
