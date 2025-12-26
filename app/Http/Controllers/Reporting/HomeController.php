@@ -97,23 +97,20 @@ class HomeController extends Controller
 
             $topTickets = Ticket::query()
                 ->select('tickets.id', 'tickets.ticket_number', 'tickets.titulo')
-                ->selectRaw('projects.nombre as project_name')
                 ->selectRaw('COALESCE(SUM(ticket_thread_histories.time), 0) as total_time')
-                ->leftJoin('projects', 'tickets.project_id', '=', 'projects.id')
                 ->leftJoin('ticket_threads', function ($join) use ($userId) {
                     $join->on('tickets.id', '=', 'ticket_threads.ticket_id')
                         ->where('ticket_threads.user_id', $userId);
                 })
                 ->leftJoin('ticket_thread_histories', 'ticket_threads.id', '=', 'ticket_thread_histories.thread_id')
-                ->whereIn('tickets.project_id', $userProjects->pluck('id')->toArray()) 
-                ->groupBy('tickets.id', 'tickets.ticket_number', 'tickets.titulo', 'projects.nombre')
+                ->whereIn('tickets.project_id', $userProjects->pluck('id')->toArray())
+                ->groupBy('tickets.id', 'tickets.ticket_number', 'tickets.titulo')
                 ->orderByDesc('total_time')
                 ->limit(5)
                 ->get()
                 ->map(function ($ticket) {
                     return [
                         'name' => "#{$ticket->ticket_number} - {$ticket->titulo}",
-                        'project' => $ticket->project_name,
                         'value' => (int)$ticket->total_time
                     ];
                 });
